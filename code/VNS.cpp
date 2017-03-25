@@ -5,11 +5,11 @@
 #include <string>
 #include <ctime> 
 #include "cInstance.hpp"
+#include "cConfiguration.hpp"
 
 using namespace std;
 
 typedef vector<unsigned> Solution;
-const int CONVERGENCE_MAX = 5;
 
 void generateSolution(Solution &solution, const cInstance &c){
 	unsigned aux,ind1,ind2;
@@ -80,18 +80,29 @@ void generateNeighbor(const Solution &sol, Solution &neigh, int size){
 	}
 }
 
-void algorithm(const cInstance &c, const unsigned steps, const bool verbose){
+void algorithm(const cInstance &c, const AlgorithmCfg &cfg, const unsigned run){
 	Solution current_sol, best_sol;
 	double fitness, best_fit;
-	int convergence = CONVERGENCE_MAX;
+	int convergence = cfg.getConvergence();
 	int neighborhood = 1;
+
+	// For writing the results;
+	ofstream res, evals;
+	string fname1 = cfg.getExperimentName() + "g.txt"; 
+	string fname2 = cfg.getExperimentName() + to_string(run) + ".txt"; 
+	if(run == 0){
+		res.open(fname1.c_str());
+	} else {
+		res.open(fname1.c_str(),ios::app);
+	}
+	evals.open(fname2.c_str());
 
 	generateSolution(current_sol, c);
 	fitness = evaluate(current_sol, c);
 	best_sol = current_sol; best_fit = fitness;
-	if(verbose)  cout << fitness << endl;
+	if(cfg.isVerbose())  evals << best_fit << endl;
 
-	for(int i = 1; i < steps; i++)
+	for(int i = 1; i < cfg.getEvaluations(); i++)
 	{
 		generateNeighbor(best_sol, current_sol, neighborhood);
 		fitness = evaluate(current_sol, c);
@@ -100,47 +111,41 @@ void algorithm(const cInstance &c, const unsigned steps, const bool verbose){
 			best_sol = current_sol; 
 			best_fit = fitness;
 			neighborhood = 1;
-			convergence = CONVERGENCE_MAX;
+			convergence = cfg.getConvergence();
 		} else {
 			convergence--;
 			if(convergence == 0){
 				neighborhood++;
-				convergence = CONVERGENCE_MAX;
+				convergence = cfg.getConvergence();
 				if(neighborhood == best_sol.size()) break;
 			}
 		}
-		if(verbose)  cout << best_fit << endl;
+		if(cfg.isVerbose())  evals << best_fit << endl;
 	}
 
-	if(verbose){
-		cout << "Best solution: " << endl;
-		for(int i = 0; i < best_sol.size(); i++)
-			cout << best_sol[i] << " ";
-		cout << endl << "Fitness: " << best_fit << endl;
-	} else {
-		cout << best_fit << endl;
-	}
+	res << best_fit << endl;
+
+	res.close();
+	evals.close();
 }
 
 int main(int argc, char **argv){
 
-	unsigned steps, runs;
-
 	srand(time(0));
 
-	if(argc < 3)
+	if(argc < 2)
 	{
-		cout << "Usage: " << argv[0] << " <instance> <number of iterations> <runs>" << endl;
+		cout << "Usage: " << argv[0] << " <configuration file>" << endl;
 		exit(-1);
 	}
 
-	cInstance c(argv[1]);
-	steps = atoi(argv[2]);
-	runs = atoi(argv[3]);
+	AlgorithmCfg cfg;
+	cfg.readCfg(argv[1]);
+	cInstance c(cfg.getInstanceName());
 
-	for(int i = 0; i < runs ; i++)
+	for(int i = 0; i < cfg.getRuns() ; i++)
 	{
-		algorithm(c, steps, runs == 1);
+		algorithm(c, cfg, i);
 	}
 
 	return 0;

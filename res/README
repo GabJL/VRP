@@ -1,0 +1,3 @@
+for each experiment X, the algorithm create the following files:
+- Xg.txt with the best result found in the execution
+- XN.txt (where N in [0,runs) ) with the current solution in each iteration of the technique

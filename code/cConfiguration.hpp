@@ -18,6 +18,7 @@ public:
 	string getExperimentName() const;
 	bool isVerbose() const;
 	string getNeighborhoodOperator() const;
+	unsigned getConvergence() const;
 
 private:
 	unsigned runs;
@@ -26,6 +27,7 @@ private:
 	string	experiment_name;
 	bool	verbose;	
 	string 	neighborhood_operator;
+	unsigned convergence;
 };
 
 #endif

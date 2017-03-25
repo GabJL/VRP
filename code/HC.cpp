@@ -114,6 +114,7 @@ void generateNeighbor(const Solution &sol, Solution &neigh, const string &op){
 	else if(op == "Inversion") 	inversion(sol, neigh);
 	else  								insertion(sol, neigh);
 }
+
 void algorithm(const cInstance &c, const AlgorithmCfg &cfg, const unsigned run){
 	Solution current_sol, best_sol;
 	double fitness, best_fit;

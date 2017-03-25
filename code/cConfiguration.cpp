@@ -11,6 +11,7 @@ AlgorithmCfg::AlgorithmCfg(){
 	experiment_name = "Experiment";
 	verbose = true;
 	neighborhood_operator = "Insertion";
+	convergence = 5;
 }
 
 void AlgorithmCfg::readCfg(string filename){
@@ -31,6 +32,7 @@ void AlgorithmCfg::readCfg(string filename){
 		else if(attr_name == "experiment") f >> experiment_name; 
 		else if(attr_name == "verbose"){ f >> value; verbose = (value == 1);}
 		else if(attr_name == "neighbor") f >> neighborhood_operator;
+		else if(attr_name == "convergence") f >> convergence;
 		f >> ws >> attr_name;
 	}
 	f.close();
@@ -58,4 +60,8 @@ bool AlgorithmCfg::isVerbose() const{
 
 string AlgorithmCfg::getNeighborhoodOperator() const{
 	return neighborhood_operator;
+}
+
+unsigned AlgorithmCfg::getConvergence() const{
+	return convergence;
 }
