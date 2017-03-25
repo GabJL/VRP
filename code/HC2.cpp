@@ -70,11 +70,10 @@ void generateNeighbor(const Solution &sol, Solution &neigh){
 	
 	int pos1 = rand()%neigh.size();		// Posición a mover
 	int city = neigh[pos1];				// Tomamos la ciudad a mover
-	neigh.erase(neigh.begin() + pos1);	// Lo borramos de la solución
-
 	int pos2 = rand()%neigh.size();		// Posición donde insertar
-	neigh.insert(neigh.begin()+pos2,city); // La insertamos en la nueva posición
-	
+
+	neigh[pos1] = neigh[pos2];
+	neigh[pos2] = city;
 }
 
 void algorithm(const cInstance &c, const unsigned steps, const bool verbose){

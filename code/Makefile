@@ -4,8 +4,8 @@ all: RS HC1 HC2 HC3 VNS ssGA
 clean:
 	rm RS HC1 HC2 HC3 VNS ssGA
 
-RS: RS.cpp cInstance.cpp
-	g++ -o RS RS.cpp cInstance.cpp
+RS: RS.cpp cInstance.cpp cConfiguration.cpp
+	g++ -o RS RS.cpp cInstance.cpp cConfiguration.cpp -std=c++11
 
 HC1: HC1.cpp cInstance.cpp
 	g++ -o HC1 HC1.cpp cInstance.cpp
