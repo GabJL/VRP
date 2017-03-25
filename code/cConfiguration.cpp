@@ -12,6 +12,12 @@ AlgorithmCfg::AlgorithmCfg(){
 	verbose = true;
 	neighborhood_operator = "Insertion";
 	convergence = 5;
+	popsize = 10;
+	selection = "Random";
+	mutationP = 0.8;
+	mutationOp = "Insertion";
+	recombinationP = 0.8;
+	recombinationOp = "OX";
 }
 
 void AlgorithmCfg::readCfg(string filename){
@@ -33,6 +39,12 @@ void AlgorithmCfg::readCfg(string filename){
 		else if(attr_name == "verbose"){ f >> value; verbose = (value == 1);}
 		else if(attr_name == "neighbor") f >> neighborhood_operator;
 		else if(attr_name == "convergence") f >> convergence;
+		else if(attr_name == "popsize") f >> popsize;
+		else if(attr_name == "selection") f >> selection;
+		else if(attr_name == "mutationP") f >> mutationP;
+		else if(attr_name == "mutationOp") f >> mutationOp;
+		else if(attr_name == "recombinationP") f >> recombinationP;
+		else if(attr_name == "recombinationOp") f >> recombinationOp;
 		f >> ws >> attr_name;
 	}
 	f.close();
@@ -64,4 +76,28 @@ string AlgorithmCfg::getNeighborhoodOperator() const{
 
 unsigned AlgorithmCfg::getConvergence() const{
 	return convergence;
+}
+
+unsigned AlgorithmCfg::getPopulationSize() const{
+	return popsize;
+}
+
+string AlgorithmCfg::getSelection() const{
+	return selection;
+}
+
+float AlgorithmCfg::getMutationProbability() const{
+	return mutationP;
+}
+
+string AlgorithmCfg::getMutationOperator() const{
+	return mutationOp;
+}
+
+float AlgorithmCfg::getRecombinationProbability() const{
+	return recombinationP;
+}
+
+string AlgorithmCfg::getRecombinationOperator() const{
+	return recombinationOp;
 }

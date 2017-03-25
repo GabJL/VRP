@@ -6,12 +6,12 @@
 #include <ctime> 
 #include <algorithm>
 #include "cInstance.hpp"
+#include "cConfiguration.hpp"
 
 using namespace std;
 
 typedef vector<unsigned> Solution;
 typedef vector<Solution> Population;
-const int POP_SIZE = 10;
 
 void generateSolution(Solution &solution, const cInstance &c){
 	unsigned aux,ind1,ind2;
@@ -68,9 +68,9 @@ double evaluate(const Solution &solution, const cInstance &c){
 	return fitness;
 }
 
-void initializePopulation(Population &pop, vector<float> &fitness, const cInstance &c){
+void initializePopulation(Population &pop, vector<float> &fitness, const cInstance &c, const unsigned popSize){
 	pop.clear();
-	for(int i = 0; i < POP_SIZE; i++){
+	for(int i = 0; i < popSize; i++){
 		Solution s;
 		generateSolution(s,c);
 		fitness.push_back(evaluate(s,c));
@@ -78,16 +78,23 @@ void initializePopulation(Population &pop, vector<float> &fitness, const cInstan
 	}
 }
 
-void selectParents(const Population &p, Solution &i1, Solution &i2){
-	int pos1 = rand()%(p.size()-1) + 1;
-	if(rand()*1.0/RAND_MAX  > 0.5){
-		i1 = p[pos1];
-		i2 = p[rand()%pos1];
-	} else {
-		i1 = p[rand()%pos1];
-		i2 = p[pos1];
-	}
+void randomSelection(const Population &p, Solution &i){
+	i = p[rand()%p.size()];
 }
+
+void binaryTournament(const Population &p, const vector<float> &fitness, Solution &i){
+	int pos1 = rand()%(p.size()-1) + 1;
+	int pos2 = rand()%pos1;
+
+	if(fitness[pos1] >= fitness[pos2]) i = p[pos1];
+	else i = p[pos2];
+}
+
+void selectParent(const Population &p, const vector<float> &fitness, Solution &i, const string &selM){
+	if(selM == "BinTour")  binaryTournament(p,fitness, i);
+	else					randomSelection(p,i);
+}
+
 
 bool isIn(const Solution &s, const int start, const int end, const unsigned value){
 	int i = start;
@@ -96,7 +103,7 @@ bool isIn(const Solution &s, const int start, const int end, const unsigned valu
 	return i <= end;
 }
 
-void recombine(Solution &i1, const Solution &i2){
+void OX(Solution &i1, const Solution &i2){
 	int pos1, pos2; 
 	do{
 		pos1 = rand()%i1.size();	
@@ -116,10 +123,81 @@ void recombine(Solution &i1, const Solution &i2){
 		}
 		j++;
 	}
-
 }
 
-void mutate(Solution &s, const cInstance &c){
+void CX(Solution &i1, const Solution &i2){
+		Solution s = i1;
+		int max = i1.size();
+		vector<bool> elegidos(max);
+		vector<int> pos1(max);
+		vector<int> pos2(max);
+		bool fin = false;
+		int elemento;
+		int parent;
+
+		// pos?[i] = j -> si en la solucion? el cliente i+1 se visita en j-ésimo lugar.
+		for (int i = 0; i < max; i++)
+		{
+			i1[i] = 0;
+			elegidos[i] = false;
+			pos1[s[i]-1] = i;
+			pos2[i2[i]-1] = i;
+		}
+
+		parent = 0;
+		for (int i = 0 ; i < max; i++)
+		{
+			if(!elegidos[i])
+			{
+				i1[i] = (parent == 0?s[i]:i2[i]);
+				elemento = i1[i]-1;
+				elegidos[i] = true;
+				do
+				{
+					int pos = ((1-parent)==0?pos1[elemento]:pos2[elemento]);
+                    fin = elegidos[pos];
+                    if(!fin)
+                    {
+						i1[pos] = (parent==0?s[pos]:i2[pos]);
+						elemento = 	i1[pos]-1;
+						elegidos[pos] = true;
+                    }
+
+				} while(!fin);
+				parent = 1 - parent;
+			}
+		}
+}
+
+void recombine(Solution &i1, const Solution &i2, const float probC, const string &op){
+	int prob = rand()*1.0/RAND_MAX;
+	if(prob <= probC){
+		if(op == "CX") 	CX(i1,i2);
+		else OX(i1,i2);
+	}
+}
+
+void insertion(Solution &sol){
+	int pos1 = rand()%sol.size();		
+	int city = sol[pos1];				
+	sol.erase(sol.begin() + pos1);
+
+	int pos2 = rand()%sol.size();
+	sol.insert(sol.begin()+pos2,city); 
+	
+}
+
+void interchange(Solution &sol){
+	int pos1 = rand()%sol.size();
+	int pos2 = rand()%sol.size();	
+
+	int city = sol[pos1];		
+	sol[pos1] = sol[pos2];
+	sol[pos2] = city;
+	
+}
+
+void inversion(Solution &s){
 	int pos1 = rand()%s.size();	
 	int pos2 = rand()%s.size();	
 	if(pos2 < pos1){
@@ -137,6 +215,15 @@ void mutate(Solution &s, const cInstance &c){
 	}
 }
 
+void mutate(Solution &s, const float &probM, const string &op){
+	int prob = rand()*1.0/RAND_MAX;
+	if(prob <= probM){
+		if(op == "Interchange") 	interchange(s);
+		else if(op == "Inversion") 	inversion(s);
+		else  						insertion(s);
+	}
+}
+
 void merge(Population &p, const  Solution &s, vector<float> &fitness, const cInstance &c){
 	float fit = evaluate(s,c);
 	int pos = rand()%p.size();
@@ -146,63 +233,68 @@ void merge(Population &p, const  Solution &s, vector<float> &fitness, const cIns
 	}
 }
 
-void algorithm(const cInstance &c, const unsigned steps, const bool verbose){
-	Population population(POP_SIZE);
+void algorithm(const cInstance &c, const AlgorithmCfg &cfg, const unsigned run){
+	Population population(cfg.getPopulationSize());
 	vector<float> fitness;
 	int pos;
 
-	initializePopulation(population,fitness, c);
-	if(verbose){
+	// For writing the results;
+	ofstream res, evals;
+	string fname1 = cfg.getExperimentName() + "g.txt"; 
+	string fname2 = cfg.getExperimentName() + to_string(run) + ".txt"; 
+	if(run == 0){
+		res.open(fname1.c_str());
+	} else {
+		res.open(fname1.c_str(),ios::app);
+	}
+	evals.open(fname2.c_str());
+
+	initializePopulation(population,fitness, c, cfg.getPopulationSize());
+	if(cfg.isVerbose()) {
 		pos = distance(fitness.begin(), min_element(fitness.begin(), fitness.end()));
-		cout << fitness[pos] << endl;
+		evals << fitness[pos] << endl;
 	}
 
-	for(int i = POP_SIZE; i < steps; i++)
+	for(int i = cfg.getPopulationSize(); i < cfg.getEvaluations(); i++)
 	{
 		Solution ind1, ind2;
-		selectParents(population, ind1, ind2);
-		recombine(ind1, ind2);
-		mutate(ind1,c);
+		selectParent(population, fitness, ind1, cfg.getSelection());
+		selectParent(population, fitness, ind2, cfg.getSelection());
+		recombine(ind1, ind2, cfg.getRecombinationProbability(), cfg.getRecombinationOperator());
+		mutate(ind1,cfg.getMutationProbability(), cfg.getMutationOperator());
 		merge(population,ind1,fitness,c);
-		if(verbose){
+		if(cfg.isVerbose()) {
 			pos = distance(fitness.begin(), min_element(fitness.begin(), fitness.end()));
-			cout << fitness[pos] << endl;
+			evals << fitness[pos] << endl;
 		}
 	}
 
 	pos = distance(fitness.begin(), min_element(fitness.begin(), fitness.end()));
-	if(verbose){
-		cout << "Best solution: " << endl;
-		for(int i = 0; i < population[pos].size(); i++)
-			cout << population[pos][i] << " ";
-		cout << endl << "Fitness: " << fitness[pos] << endl;
-	} else {
-		cout << fitness[pos] << endl;
-	}
+	res << fitness[pos] << endl;
+
+	res.close();
+	evals.close();
+
 }
 
 int main(int argc, char **argv)
 {
-	unsigned steps;
-	unsigned runs;
-
 	srand(time(0));
 
-	if(argc < 3)
+	if(argc < 2)
 	{
-		cout << "Usage: " << argv[0] << " <instance> <number of generations> <runs>" << endl;
+		cout << "Usage: " << argv[0] << " <configuration file>" << endl;
 		exit(-1);
 	}
 
-	cInstance c(argv[1]);
-	steps = atoi(argv[2]);
-	runs = atoi(argv[3]);
+	AlgorithmCfg cfg;
+	cfg.readCfg(argv[1]);
+	cInstance c(cfg.getInstanceName());
 
-	for(int i = 0; i < runs ; i++)
+	for(int i = 0; i < cfg.getRuns() ; i++)
 	{
-		algorithm(c, steps, runs == 1);
+		algorithm(c, cfg, i);
 	}
-
 	return 0;
 }
 
