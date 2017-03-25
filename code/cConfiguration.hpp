@@ -17,6 +17,7 @@ public:
 	string getInstanceName() const;
 	string getExperimentName() const;
 	bool isVerbose() const;
+	string getNeighborhoodOperator() const;
 
 private:
 	unsigned runs;
@@ -24,6 +25,7 @@ private:
 	string	instance_name;
 	string	experiment_name;
 	bool	verbose;	
+	string 	neighborhood_operator;
 };
 
 #endif

@@ -1,20 +1,14 @@
-all: RS HC1 HC2 HC3 VNS ssGA
-	cp RS HC1 HC2 HC3 VNS ssGA ..
+all: RS HC VNS ssGA
+	cp RS HC VNS ssGA ..
 
 clean:
-	rm RS HC1 HC2 HC3 VNS ssGA
+	rm RS HC VNS ssGA
 
 RS: RS.cpp cInstance.cpp cConfiguration.cpp
 	g++ -o RS RS.cpp cInstance.cpp cConfiguration.cpp -std=c++11
 
-HC1: HC1.cpp cInstance.cpp
-	g++ -o HC1 HC1.cpp cInstance.cpp
-
-HC2: HC2.cpp cInstance.cpp
-	g++ -o HC2 HC2.cpp cInstance.cpp
-
-HC3: HC3.cpp cInstance.cpp
-	g++ -o HC3 HC3.cpp cInstance.cpp
+HC: HC.cpp cInstance.cpp
+	g++ -o HC HC.cpp cInstance.cpp cConfiguration.cpp -std=c++11
 
 VNS: VNS.cpp cInstance.cpp
 	g++ -o VNS VNS.cpp cInstance.cpp 

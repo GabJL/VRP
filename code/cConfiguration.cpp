@@ -10,6 +10,7 @@ AlgorithmCfg::AlgorithmCfg(){
 	instance_name = "instances/vrpnc1.txt";
 	experiment_name = "Experiment";
 	verbose = true;
+	neighborhood_operator = "Insertion";
 }
 
 void AlgorithmCfg::readCfg(string filename){
@@ -29,6 +30,7 @@ void AlgorithmCfg::readCfg(string filename){
 		else if(attr_name == "instance") f >> instance_name; 
 		else if(attr_name == "experiment") f >> experiment_name; 
 		else if(attr_name == "verbose"){ f >> value; verbose = (value == 1);}
+		else if(attr_name == "neighbor") f >> neighborhood_operator;
 		f >> ws >> attr_name;
 	}
 	f.close();
@@ -54,3 +56,6 @@ bool AlgorithmCfg::isVerbose() const{
 	return verbose;
 }
 
+string AlgorithmCfg::getNeighborhoodOperator() const{
+	return neighborhood_operator;
+}

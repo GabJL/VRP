@@ -5,6 +5,7 @@
 #include <string>
 #include <ctime> 
 #include "cInstance.hpp"
+#include "cConfiguration.hpp"
 
 using namespace std;
 
@@ -65,7 +66,7 @@ double evaluate(const Solution &solution, const cInstance &c){
 	return fitness;
 }
 
-void generateNeighbor(const Solution &sol, Solution &neigh){
+void insertion(const Solution &sol, Solution &neigh){
 	neigh = sol;						// Copiamos la actual al vecino
 	
 	int pos1 = rand()%neigh.size();		// Posición a mover
@@ -77,56 +78,97 @@ void generateNeighbor(const Solution &sol, Solution &neigh){
 	
 }
 
-void algorithm(const cInstance &c, const unsigned steps, const bool verbose){
+void interchange(const Solution &sol, Solution &neigh){
+	neigh = sol;
+	
+	int pos1 = rand()%neigh.size();
+	int pos2 = rand()%neigh.size();	
+
+	int city = neigh[pos1];		
+   neigh[pos1] = neigh[pos2];
+	neigh[pos2] = city;
+	
+}
+
+void inversion(const Solution &sol, Solution &neigh){
+	neigh = sol;
+	int pos1 = rand()%neigh.size();	
+	int pos2 = rand()%neigh.size();	
+	if(pos2 < pos1){
+		int aux = pos1;
+		pos1 = pos2;
+		pos2 = aux;
+	}
+
+	while(pos1 < pos2){
+		int city = neigh[pos1];
+		neigh[pos1] = neigh[pos2];
+		neigh[pos2] = city;	
+		pos1++;
+		pos2--;
+	}
+}
+
+void generateNeighbor(const Solution &sol, Solution &neigh, const string &op){
+	if(op == "Interchange") 		interchange(sol, neigh);
+	else if(op == "Inversion") 	inversion(sol, neigh);
+	else  								insertion(sol, neigh);
+}
+void algorithm(const cInstance &c, const AlgorithmCfg &cfg, const unsigned run){
 	Solution current_sol, best_sol;
 	double fitness, best_fit;
+
+	// For writing the results;
+	ofstream res, evals;
+	string fname1 = cfg.getExperimentName() + "g.txt"; 
+	string fname2 = cfg.getExperimentName() + to_string(run) + ".txt"; 
+	if(run == 0){
+		res.open(fname1.c_str());
+	} else {
+		res.open(fname1.c_str(),ios::app);
+	}
+	evals.open(fname2.c_str());
 
 	generateSolution(current_sol, c);
 	fitness = evaluate(current_sol, c);
 	best_sol = current_sol; best_fit = fitness;
-	if(verbose)  cout << fitness << endl;
+	if(cfg.isVerbose())  evals << best_fit << endl;
 
-	for(int i = 1; i < steps; i++)
+	for(int i = 1; i < cfg.getEvaluations(); i++)
 	{
-		generateNeighbor(best_sol, current_sol);
+		generateNeighbor(best_sol, current_sol, cfg.getNeighborhoodOperator());
 		fitness = evaluate(current_sol, c);
 		if(fitness < best_fit)
 		{
 			best_sol = current_sol; 
 			best_fit = fitness;
 		}
-		if(verbose)  cout << best_fit << endl;
+		if(cfg.isVerbose())  evals << best_fit << endl;
 	}
 
-	if(verbose){
-		cout << "Best solution: " << endl;
-		for(int i = 0; i < best_sol.size(); i++)
-			cout << best_sol[i] << " ";
-		cout << endl << "Fitness: " << best_fit << endl;
-	} else {
-		cout << best_fit << endl;
-	}
+	res << best_fit << endl;
+
+	res.close();
+	evals.close();
 }
 
 int main(int argc, char **argv){
 
-	unsigned steps, runs;
-
 	srand(time(0));
 
-	if(argc < 3)
+	if(argc < 2)
 	{
-		cout << "Usage: " << argv[0] << " <instance> <number of iterations> <runs>" << endl;
+		cout << "Usage: " << argv[0] << " <configuration file>" << endl;
 		exit(-1);
 	}
 
-	cInstance c(argv[1]);
-	steps = atoi(argv[2]);
-	runs = atoi(argv[3]);
+	AlgorithmCfg cfg;
+	cfg.readCfg(argv[1]);
+	cInstance c(cfg.getInstanceName());
 
-	for(int i = 0; i < runs ; i++)
+	for(int i = 0; i < cfg.getRuns() ; i++)
 	{
-		algorithm(c, steps, runs == 1);
+		algorithm(c, cfg, i);
 	}
 
 	return 0;
